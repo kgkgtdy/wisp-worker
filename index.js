@@ -266,22 +266,29 @@ class WispConnection {
 
 export default {
   async fetch(request, env) {
-    if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
-      return new Response("Wisp server. Connect with a websocket to a path ending in '/'.\n", { status: 426 });
+    const url = new URL(request.url);
+
+    if (url.pathname === "/wisp/") {
+      return handleWisp(request, env);
     }
-    if (!new URL(request.url).pathname.endsWith("/")) {
-      return new Response("Wisp endpoints must end with '/'.\n", { status: 404 });
-    }
 
-    const { 0: client, 1: server } = new WebSocketPair();
-    server.binaryType = "arraybuffer";
-    server.accept();
-
-    const headers = new Headers();
-    const protocols = request.headers.get("Sec-WebSocket-Protocol");
-    if (protocols) headers.set("Sec-WebSocket-Protocol", protocols.split(",")[0].trim());
-
-    new WispConnection(server, protocols ? 2 : 1, env).start();
-    return new Response(null, { status: 101, webSocket: client, headers });
+    return env.ASSETS.fetch(request);
   },
 };
+
+async function handleWisp(request, env) {
+  if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
+    return new Response("Wisp server. Connect with a websocket to /wisp/.\n", { status: 426 });
+  }
+
+  const { 0: client, 1: server } = new WebSocketPair();
+  server.binaryType = "arraybuffer";
+  server.accept();
+
+  const headers = new Headers();
+  const protocols = request.headers.get("Sec-WebSocket-Protocol");
+  if (protocols) headers.set("Sec-WebSocket-Protocol", protocols.split(",")[0].trim());
+
+  new WispConnection(server, protocols ? 2 : 1, env).start();
+  return new Response(null, { status: 101, webSocket: client, headers });
+}
