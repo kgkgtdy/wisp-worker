@@ -1,3 +1,7 @@
 name = "wisp-worker4"
 main = "index.js"
 compatibility_date = "2026-10-01"
+
+[assets]
+directory = "./"
+binding = "ASSETS"
